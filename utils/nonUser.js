@@ -250,7 +250,7 @@ const createNewCustomer = (userId) => {
                       action: {
                         type: "uri",
                         label: `ลงทะเบียน`,
-                        uri: `https://srangseethammakul.github.io/ihealth?userid=${userId}`,
+                        uri: `https://connect-meeting-frontend.netlify.app/customer?userid=${userId}`,
                       },
                       style: "primary",
                     },

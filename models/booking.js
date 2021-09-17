@@ -1,38 +1,19 @@
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 const schema = new mongoose.Schema(
   {
-    customer: {
-      type: String,
-      require: true,
-      trim: true,
-    },
-    name: {
-      type: String,
-      require: true,
-      trim: true,
-    },
-    numberPhone: {
-      type: String,
-      require: true,
-      trim: true,
-    },
-    department: {
-      type: String,
-      require: true,
-      trim: true,
-    },
-    isUsed: {
-      type: Boolean,
-      default: true,
-    },
+    customer : {type : Schema.Types.ObjectId, ref : 'Customer'},
+    room : {type : Schema.Types.ObjectId, ref : 'Room'},
+    bookingStart: Date,
+    bookingEnd: Date,
   },
   {
     toJSON: { virtuals: true },
     timestamps: true,
-    collection: "customers",
+    collection: "bookings",
   }
 );
 
-const Customer = mongoose.model("Customer", schema);
+const Booking = mongoose.model("Booking", schema);
 
-module.exports = Customer;
+module.exports = Booking;

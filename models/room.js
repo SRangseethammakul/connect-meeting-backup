@@ -14,9 +14,7 @@ const schema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    img: {
-      type: String,
-    },
+    image : {type : String, default : 'nopic.png'},
   },
   {
     toJSON: { virtuals: true },

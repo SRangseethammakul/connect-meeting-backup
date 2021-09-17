@@ -11,6 +11,7 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const lineMessageRouter = require('./routes/lineMessageAPI');
 const customerRouter = require('./routes/customer');
+const roomRouter = require('./routes/room');
 
 
 //import middleware
@@ -30,7 +31,11 @@ mongoose.connect(config.MONGODB_URI, {
 });
 
 app.use(logger('dev'));
-app.use(express.json());
+app.use(
+  express.json({
+    limit: "50mb",
+  })
+);
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -39,6 +44,7 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use("/lineMessage", lineMessageRouter);
 app.use("/customer", customerRouter);
+app.use("/room", roomRouter);
 
 app.use(errorHandler);
 module.exports = app;
