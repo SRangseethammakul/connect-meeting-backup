@@ -2,7 +2,7 @@ const format = require("date-fns/format");
 const addMinutes = require("date-fns/addMinutes");
 const parseISO = require("date-fns/parseISO");
 const Booking = require("../models/booking");
-async function appintmentRoomEnd(resultDate, startDateISO) {
+async function appointmentStart(resultDate, startDateISO) {
   let newResultDate = addMinutes(startDateISO, 1);
   let newResult = format(newResultDate, "yyyy-MM-dd'T'HH:mm");
   startDateISO = format(startDateISO, "yyyy-MM-dd'T'HH:mm");
@@ -164,32 +164,8 @@ async function appintmentRoomEnd(resultDate, startDateISO) {
   };
   return payLoad;
 }
-async function appintmentRoomSuccess(resultEndDate, resultStartDate) {
-  let booking_rooms = await checkTimeOverlabWithoutRoom(
-    resultStartDate,
-    resultEndDate
-  );
-  let getAlldata = await getAllData();
-  array1 = await getAlldata.filter(function (n) {
-    for (var i = 0; i < booking_rooms.length; i++) {
-      if (n.id == booking_rooms[i].room_id) {
-        return false;
-      }
-    }
-    return true;
-  });
-  resultEndDate = format(resultEndDate, "yyyy-MM-dd'T'HH:mm");
-  resultStartDate = format(resultStartDate, "yyyy-MM-dd'T'HH:mm");
-  let res = await array1
-    .filter((item) => item.status === true && item.useable === true)
-    .map((item) => ({
-      imageUrl: item.img,
-      action: {
-        type: "postback",
-        label: `เลือกห้อง ${item.name}`,
-        data: `from=select&roomId=${item.id}&endDate=${resultEndDate}&startDate=${resultStartDate}`,
-      },
-    }));
+async function appintmentRoomSuccess(res,resultEndDate, resultStartDate) {
+  let response = '';
   if (res.length) {
     response = {
       type: "template",
@@ -200,27 +176,19 @@ async function appintmentRoomSuccess(resultEndDate, resultStartDate) {
       },
     };
   } else {
-    response = {
+    response = [{
+      type : "text",
+      "text": "ไม่มีห้องว่าง"
+    },{
       type: "sticker",
       packageId: "6136",
       stickerId: "10551391",
-    };
+    }];
   }
   return response;
 }
-async function appointmentRoomEnd(dataFrom, userId) {
-  const [red, ...set] = dataFrom.split("&");
-  // let res = await dataRoom.find(element => element.id === parseInt(set[0].split('=')[1]));
+async function appointmentRoomEnd(room, startDate, endDate) {
   try {
-    let res = await getRoomById(set[0].split("=")[1]);
-    let dataCheckin = new Booking({
-      username: userId,
-      room_id: res.id,
-      room_name: res.name,
-      bookingStart: parseISO(set[2].split("=")[1]),
-      bookingEnd: parseISO(set[1].split("=")[1]),
-    });
-    await createBooking(dataCheckin);
     let payLoad = {
       type: "flex",
       altText: "ข้อมูล",
@@ -228,7 +196,7 @@ async function appointmentRoomEnd(dataFrom, userId) {
         type: "bubble",
         hero: {
           type: "image",
-          url: res.img,
+          url: room.image,
           size: "full",
           aspectRatio: "20:13",
           aspectMode: "cover",
@@ -244,7 +212,7 @@ async function appointmentRoomEnd(dataFrom, userId) {
           contents: [
             {
               type: "text",
-              text: res.name,
+              text: room.name,
               wrap: true,
               weight: "bold",
               gravity: "center",
@@ -310,10 +278,7 @@ async function appointmentRoomEnd(dataFrom, userId) {
                     },
                     {
                       type: "text",
-                      text: format(
-                        parseISO(set[2].split("=")[1]),
-                        "PPPP kk:mm"
-                      ),
+                      text: startDate,
                       wrap: true,
                       size: "sm",
                       color: "#666666",
@@ -335,10 +300,7 @@ async function appointmentRoomEnd(dataFrom, userId) {
                     },
                     {
                       type: "text",
-                      text: format(
-                        parseISO(set[1].split("=")[1]),
-                        "PPPP kk:mm"
-                      ),
+                      text: endDate,
                       wrap: true,
                       size: "sm",
                       color: "#666666",
@@ -427,6 +389,6 @@ async function appointmentRoomEnd(dataFrom, userId) {
 }
 module.exports = {
     appintmentRoomSuccess,
-    appintmentRoomEnd,
+    appointmentStart,
     appointmentRoomEnd
   }

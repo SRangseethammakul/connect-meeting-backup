@@ -1,15 +1,24 @@
 const config = require("../config/index");
 const { createNewCustomer } = require("../utils/nonUser");
-const { getResponse } = require("../utils/room");
-const { appintmentRoomEnd } = require("../utils/appointment");
+const { getResponse, getAppointment } = require("../utils/room");
+const {
+  appointmentStart,
+  appintmentRoomSuccess,
+  appointmentRoomEnd,
+} = require("../utils/appointment");
 const {
   reserveRoomSuccess,
   reserveRoom,
   reserveRoomEnd,
 } = require("../utils/reserveRoom");
+const parseISO = require("date-fns/parseISO");
+const ObjectId = require("mongoose").Types.ObjectId;
+const format = require("date-fns/format");
 const Customer = require("../models/customer");
+const Room = require("../models/room");
+const Booking = require("../models/booking");
 const { WebhookClient } = require("dialogflow-fulfillment");
-const { Card, Suggestion, Payload } = require("dialogflow-fulfillment");
+const { Payload } = require("dialogflow-fulfillment");
 const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message";
 const LINE_PROFILE_API = "https://api.line.me/v2/bot/profile";
 const axios = require("axios");
@@ -33,7 +42,6 @@ const reply = async (replyToken, message) => {
   }
 };
 const postToDialogflow = async (payloadRequest) => {
-  console.log(config.DIALOGFLOW);
   payloadRequest.headers.host = "dialogflow.cloud.google.com";
   await axios({
     url: config.DIALOGFLOW,
@@ -83,16 +91,69 @@ exports.responeMiddle = async (req, res, next) => {
             const dateStart = data.split("=");
             let startDate = parseISO(dateStart[2]);
             let endDate = parseISO(params.datetime);
-            payLoad = await appintmentRoomSuccess(endDate, startDate);
+            let checkRoomOverlap = await Booking.find({
+              $or: [
+                {
+                  bookingStart: { $lt: endDate, $gte: startDate },
+                },
+                { bookingEnd: { $lte: endDate, $gt: startDate } },
+              ],
+            });
+            let getRooms = await Room.find();
+            let array1 = await getRooms.filter(function (n) {
+              for (var i = 0; i < checkRoomOverlap.length; i++) {
+                if (n.id == checkRoomOverlap[i].room) {
+                  return false;
+                }
+              }
+              return true;
+            });
+            let resultEndDateresAppointment = format(
+              endDate,
+              "yyyy-MM-dd'T'HH:mm"
+            );
+            let resultStartDateAppointment = format(
+              startDate,
+              "yyyy-MM-dd'T'HH:mm"
+            );
+            let resAppointment = await array1
+              .filter((item) => item.status === true && item.isUsed === true)
+              .map((item) => ({
+                imageUrl: item.image,
+                action: {
+                  type: "postback",
+                  label: `เลือกห้อง ${item.name}`,
+                  data: `from=select&roomId=${item._id}&endDate=${resultEndDateresAppointment}&startDate=${resultStartDateAppointment}`,
+                },
+              }));
+            payLoad = await appintmentRoomSuccess(
+              resAppointment,
+              resultEndDateresAppointment,
+              resultStartDateAppointment
+            );
           } else {
             if (checkRoomId[1] === "select&roomId") {
+              console.log("appointment step 3");
+              const [red, ...set] = event.postback.data.split("&");
+              const room = await Room.findById(set[0].split("=")[1]);
+              const customer = Customer.findOne({
+                userId: event.source.userId,
+              });
+              let newBooking = new Booking({
+                customer: customer.id,
+                room: room._id,
+                bookingStart: parseISO(set[2].split("=")[1]),
+                bookingEnd: parseISO(set[1].split("=")[1]),
+              });
+              await newBooking.save();
               payLoad = await appointmentRoomEnd(
-                event.postback.data,
-                event.source.userId
+                room,
+                format(parseISO(set[2].split("=")[1]), "PPPP kk:mm"),
+                format(parseISO(set[1].split("=")[1]), "PPPP kk:mm")
               );
             } else {
               let startDate = parseISO(event.postback.params.datetime);
-              payLoad = await appintmentRoomEnd(event.postback, startDate);
+              payLoad = await appointmentStart(event.postback, startDate);
             }
           }
         } else {
@@ -100,34 +161,50 @@ exports.responeMiddle = async (req, res, next) => {
             let checkStartDate = event.postback.data;
             checkStartDate = checkStartDate.split("=");
             if (checkStartDate[3]) {
+              const userLine = event.source.userId;
               let resultEndDate = parseISO(event.postback.params.datetime);
               resultStartDate = parseISO(checkStartDate[3]);
+              const room = await Room.findById(checkRoomId[2].split("&")[0]);
+              const userName = Customer.findOne({ userId: userLine });
+              let checkRoomOverlap = await Booking.find({
+                room: new ObjectId(room.id),
+                $or: [
+                  {
+                    bookingStart: { $lt: resultEndDate, $gte: resultStartDate },
+                  },
+                  { bookingEnd: { $lte: resultEndDate, $gt: resultStartDate } },
+                ],
+              });
+              if (checkRoomOverlap.length === 0) {
+                const newBooking = new Booking({
+                  customer: userName.id,
+                  room: room.id,
+                  bookingStart: resultStartDate,
+                  bookingEnd: resultEndDate,
+                });
+                await newBooking.save();
+              }
               payLoad = await reserveRoomSuccess(
-                checkRoomId[2].split("&")[0],
-                resultEndDate,
-                resultStartDate,
-                event.source.userId
+                checkRoomOverlap,
+                format(resultStartDate, "PPPP kk:mm"),
+                format(resultEndDate, "PPPP kk:mm"),
+                room
               );
             } else {
               result = parseISO(event.postback.params.datetime);
-              payLoad = await reserveRoomEnd(
-                checkRoomId[2],
-                event.postback.data,
-                result
-              );
+              const room = await Room.findById(checkRoomId[2]);
+              payLoad = await reserveRoomEnd(room, event.postback.data, result);
             }
           } else {
-            console.log(event.postback.data);
-            payLoad = await reserveRoom(checkRoomId[2], event.postback.data);
+            const room = await Room.findById(checkRoomId[2]);
+            payLoad = await reserveRoom(room, event.postback.data);
           }
         }
-
-        // await reply(event.replyToken, payLoad);
-        console.log(payLoad);
+        await reply(event.replyToken, payLoad);
       }
     }
   }
-  res.status(200).json({ message: "Hello Company", data: "company" });
+  res.status(200);
 };
 exports.dialogflow = async (req, res, next) => {
   const agent = new WebhookClient({
@@ -140,7 +217,6 @@ exports.dialogflow = async (req, res, next) => {
         "---------------------line welcome---------------------------"
       );
       let payloadJson = await getResponse();
-      console.log(payloadJson);
       let messageText =
         payloadJson.type === "sticker"
           ? "ห้องถูกจองเต็มหมดแล้วครับ"
@@ -160,7 +236,6 @@ exports.dialogflow = async (req, res, next) => {
         "---------------------line welcome appointment---------------------------"
       );
       let payloadJson = await getAppointment();
-      console.log(payloadJson);
       let messageText = "เลือกวันและเวลาที่ต้องการ";
       let payload = new Payload("LINE", payloadJson, {
         sendAsMessage: true,

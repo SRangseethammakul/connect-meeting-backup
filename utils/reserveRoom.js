@@ -1,27 +1,15 @@
 const format = require("date-fns/format");
 const addMinutes = require("date-fns/addMinutes");
-const parseISO = require("date-fns/parseISO");
-const Booking = require("../models/booking");
 
 async function reserveRoomSuccess(
-  roomId,
-  resultEndDate_old,
-  resultStartDate_old,
-  userId
+  checkRoomOverlap,
+  resultStartDate,
+  resultEndDate,
+  room
 ) {
   try {
     let payLoad = "";
-    let resultEndDate = format(resultEndDate_old, "PPPP kk:mm");
-    let resultStartDate = format(resultStartDate_old, "PPPP kk:mm");
-    // let res = await dataRoom.find(element => element.id === parseInt(roomId));
-    let res = await getRoomById(roomId);
-    let ckOver = await checkTimeOverlab(
-      resultStartDate_old,
-      resultEndDate_old,
-      res.id
-    );
-    console.log(ckOver);
-    if (ckOver.length > 0) {
+    if (checkRoomOverlap.length > 0) {
       payLoad = [
         {
           type: "text",
@@ -34,14 +22,6 @@ async function reserveRoomSuccess(
         },
       ];
     } else {
-      let dataCheckin = new Booking({
-        username: userId,
-        room_id: res.id,
-        room_name: res.name,
-        bookingStart: resultStartDate_old,
-        bookingEnd: resultEndDate_old,
-      });
-      await createBooking(dataCheckin);
       payLoad = {
         type: "flex",
         altText: "ข้อมูลการจอง",
@@ -49,7 +29,7 @@ async function reserveRoomSuccess(
           type: "bubble",
           hero: {
             type: "image",
-            url: res.img,
+            url: room.image,
             size: "full",
             aspectRatio: "20:13",
             aspectMode: "cover",
@@ -65,7 +45,7 @@ async function reserveRoomSuccess(
             contents: [
               {
                 type: "text",
-                text: res.name,
+                text: room.name,
                 wrap: true,
                 weight: "bold",
                 gravity: "center",
@@ -241,10 +221,8 @@ async function reserveRoomSuccess(
     console.log(error.message);
   }
 }
-async function reserveRoom(roomId, dataMessage) {
+async function reserveRoom(res, dataMessage) {
   try {
-    let res = await getRoomById(roomId);
-    // let res_old = await dataRoom.find(element => element.id === parseInt(roomId));
     let result = format(new Date(), "yyyy-MM-dd'T'HH:mm");
     let payLoad = {
       type: "flex",
@@ -253,7 +231,7 @@ async function reserveRoom(roomId, dataMessage) {
         type: "bubble",
         hero: {
           type: "image",
-          url: `${res.img}`,
+          url: `${res.image}`,
           size: "full",
           aspectRatio: "20:13",
           aspectMode: "cover",
@@ -376,8 +354,6 @@ async function reserveRoom(roomId, dataMessage) {
   }
 }
 async function reserveRoomEnd(roomId, dataMessage, resultDate) {
-  // let res_old = await dataRoom.find(element => element.id === parseInt(roomId));
-  let res = await getRoomById(roomId);
   let resultStartDate = format(resultDate, "PPPPpp");
   let newResultDate = addMinutes(resultDate, 1);
   let result = format(resultDate, "yyyy-MM-dd'T'HH:mm");
@@ -389,7 +365,7 @@ async function reserveRoomEnd(roomId, dataMessage, resultDate) {
       type: "bubble",
       hero: {
         type: "image",
-        url: res.img,
+        url: roomId.image,
         size: "full",
         aspectRatio: "20:13",
         aspectMode: "cover",
@@ -404,7 +380,7 @@ async function reserveRoomEnd(roomId, dataMessage, resultDate) {
         contents: [
           {
             type: "text",
-            text: `ห้องประชุม ${res.name}`,
+            text: `ห้องประชุม ${roomId.name}`,
             weight: "bold",
             size: "xl",
           },
