@@ -2,7 +2,7 @@
 const constantString = [
   {
     type: "flex",
-    altText: "this is a flex message",
+    altText: "สมัครใช้งาน",
     contents: {
       type: "bubble",
       header: {
