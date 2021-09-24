@@ -136,11 +136,8 @@ exports.responeMiddle = async (req, res, next) => {
               console.log("appointment step 3");
               const [red, ...set] = event.postback.data.split("&");
               const room = await Room.findById(set[0].split("=")[1]);
-              const customer = Customer.findOne({
-                userId: event.source.userId,
-              });
               let newBooking = new Booking({
-                customer: customer.id,
+                customer: existuserId._id,
                 room: room._id,
                 bookingStart: parseISO(set[2].split("=")[1]),
                 bookingEnd: parseISO(set[1].split("=")[1]),
@@ -161,11 +158,9 @@ exports.responeMiddle = async (req, res, next) => {
             let checkStartDate = event.postback.data;
             checkStartDate = checkStartDate.split("=");
             if (checkStartDate[3]) {
-              const userLine = event.source.userId;
               let resultEndDate = parseISO(event.postback.params.datetime);
               resultStartDate = parseISO(checkStartDate[3]);
               const room = await Room.findById(checkRoomId[2].split("&")[0]);
-              const userName = Customer.findOne({ userId: userLine });
               let checkRoomOverlap = await Booking.find({
                 room: new ObjectId(room.id),
                 $or: [
@@ -177,7 +172,7 @@ exports.responeMiddle = async (req, res, next) => {
               });
               if (checkRoomOverlap.length === 0) {
                 const newBooking = new Booking({
-                  customer: userName.id,
+                  customer: existuserId._id,
                   room: room.id,
                   bookingStart: resultStartDate,
                   bookingEnd: resultEndDate,

@@ -12,7 +12,6 @@ async function getResponse() {
         data: `action=re&roomId=${item.id}`,
       },
     }));
-    console.log(res);
     if (res.length) {
       response = {
         type: "template",

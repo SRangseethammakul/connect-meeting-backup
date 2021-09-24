@@ -1,7 +1,5 @@
 const format = require("date-fns/format");
 const addMinutes = require("date-fns/addMinutes");
-const parseISO = require("date-fns/parseISO");
-const Booking = require("../models/booking");
 async function appointmentStart(resultDate, startDateISO) {
   let newResultDate = addMinutes(startDateISO, 1);
   let newResult = format(newResultDate, "yyyy-MM-dd'T'HH:mm");

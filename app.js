@@ -12,6 +12,7 @@ const usersRouter = require('./routes/users');
 const lineMessageRouter = require('./routes/lineMessageAPI');
 const customerRouter = require('./routes/customer');
 const roomRouter = require('./routes/room');
+const bookingRouter = require('./routes/booking');
 
 
 //import middleware
@@ -45,6 +46,7 @@ app.use('/users', usersRouter);
 app.use("/lineMessage", lineMessageRouter);
 app.use("/customer", customerRouter);
 app.use("/room", roomRouter);
+app.use("/booking", bookingRouter);
 
 app.use(errorHandler);
 module.exports = app;
