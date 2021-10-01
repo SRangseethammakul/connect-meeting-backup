@@ -12,7 +12,7 @@ exports.index = async (req, res, next) => {
       .sort({ _id: -1 });
     const bookingItems = await bookings.map((booking, index) => {
       return {
-        title: booking.room.name,
+        title: 'booking.room.name',
         start: booking.bookingStart,
         end: booking.bookingEnd,
         extendedProps: {
