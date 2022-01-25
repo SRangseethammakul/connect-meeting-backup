@@ -32,6 +32,7 @@ exports.receive = async (req, res, next) => {
     if (body.object === "page") {
       body.entry.forEach(async function (entry) {
         let webhook_event = entry.messaging[0];
+        console.log(webhook_event);
         let senderUserid = webhook_event.sender.id;
         if (webhook_event.postback) {
           console.log(webhook_event.postback.payload);
