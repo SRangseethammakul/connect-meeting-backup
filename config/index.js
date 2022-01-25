@@ -5,4 +5,5 @@ module.exports = {
     JWT_SECRET : process.env.JWT_SECRET,
     DIALOGFLOW : process.env.DIALOGFLOW,
     LINE : process.env.LINE,
+    VERIFY_TOKEN : process.env.VERIFY_TOKEN,
 }
