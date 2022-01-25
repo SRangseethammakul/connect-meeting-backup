@@ -1,3 +1,4 @@
+const config = require("../config/index");
 exports.index = async (req, res, next) => {
   try {
     res.status(200).json({
