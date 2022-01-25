@@ -25,6 +25,7 @@ exports.verifyWebHook = async (req, res) => {
 
 exports.receive = async (req, res, next) => {
   try {
+    console.log(req);
     const source = req.query.source;
     let body = req.body;
     let profileInfo,
