@@ -25,7 +25,6 @@ exports.verifyWebHook = async (req, res) => {
 
 exports.receive = async (req, res, next) => {
   try {
-    console.log(req);
     const source = req.query.source;
     let body = req.body;
     let profileInfo,
@@ -33,9 +32,9 @@ exports.receive = async (req, res, next) => {
     if (body.object === "page") {
       body.entry.forEach(async function (entry) {
         let webhook_event = entry.messaging[0];
-        console.log(webhook_event);
+        console.log("webhook",webhook_event);
         let senderUserid = webhook_event.sender.id;
-        console.log(senderUserid);
+        console.log("senderUserid",senderUserid);
       });
       res.status(200).send("EVENT_RECEIVED");
     } else {
